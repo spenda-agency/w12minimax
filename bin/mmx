@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# minimax_ads CLI の短縮ラッパ:  ./bin/mmx image "..." --preset meta_reels_9x16
+set -euo pipefail
+cd "$(dirname "$0")/.."
+exec python3 -m minimax_ads "$@"

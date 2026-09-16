@@ -1,0 +1,55 @@
+{
+  "name": "ai_marketing_yt_30s",
+  "preset": "youtube_instream_16x9",
+  "style": "premium corporate film, photorealistic, cinematic lighting, modern Japanese business setting, restrained color palette of deep navy white and warm amber accents, 35mm look, shallow depth of field, no text, no lettering, no watermark, no logo",
+  "video_model": "MiniMax-Hailuo-02",
+  "subtitles": true,
+  "font": "Noto Sans CJK JP",
+  "voiceover": {
+    "enabled": true,
+    "voice_id": "Japanese_IntellectualSenior",
+    "speed": 1.0,
+    "script": "広告費は増えているのに、成果が見えない。その原因は、データが分断されていることかもしれません。私たちは、AIとBIで、散らばった数字をひとつの意思決定につなぎます。何が効いているのか、次に何をすべきか。答えは、あなたのデータの中にあります。データ活用の伴走支援。まずは無料診断から。"
+  },
+  "bgm": {
+    "path": "assets/bgm/corporate_cinematic.mp3",
+    "gain_db": -22
+  },
+  "shots": [
+    {
+      "id": "s1_problem",
+      "seconds": 6,
+      "caption": "広告費は増えた。成果は、見えない。",
+      "image_prompt": "wide cinematic shot of a Japanese marketing manager standing alone in a dim meeting room at night, a large screen behind him showing a flat declining performance graph, city lights through the window",
+      "motion_prompt": "slow dolly-in toward the man as he crosses his arms, the graph on the screen flickers subtly, moody and tense atmosphere"
+    },
+    {
+      "id": "s2_cause",
+      "seconds": 6,
+      "caption": "原因は、分断されたデータ",
+      "image_prompt": "abstract visualization of disconnected data silos, separate glowing blue cubes of charts and tables floating apart in a dark space, thin broken lines between them, high-end 3D render look",
+      "motion_prompt": "the camera drifts slowly between the floating data silos, the broken connection lines spark and fail to link, particles drift past the lens"
+    },
+    {
+      "id": "s3_solution",
+      "seconds": 6,
+      "caption": "AI × BI で、ひとつの意思決定へ",
+      "image_prompt": "the same floating data blocks now connecting into one unified glowing dashboard, clean lines of light linking every node, elegant blue and amber palette, sense of order emerging from chaos",
+      "motion_prompt": "lines of light rapidly connect the blocks into a single dashboard, the camera pulls back smoothly to reveal the completed structure, bright and satisfying reveal"
+    },
+    {
+      "id": "s4_proof",
+      "seconds": 6,
+      "caption": "次の一手が、数字でわかる",
+      "image_prompt": "a Japanese consultant and a client reviewing a clear BI dashboard together on a tablet in a bright modern office, both pointing at an upward trending chart, collaborative and confident mood",
+      "motion_prompt": "handheld-style shot slowly circling the two people as they discuss and nod, natural light, warm and human"
+    },
+    {
+      "id": "s5_cta",
+      "seconds": 6,
+      "caption": "まずは無料診断から",
+      "image_prompt": "clean minimal corporate scene, a bright empty modern office space with soft morning light and a large blank wall, generous negative space on the right side of the frame for a logo",
+      "motion_prompt": "very slow camera push-in with light gently shifting across the wall, calm and premium closing shot"
+    }
+  ]
+}

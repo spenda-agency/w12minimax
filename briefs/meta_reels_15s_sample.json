@@ -1,0 +1,41 @@
+{
+  "name": "bi_dashboard_meta_15s",
+  "preset": "meta_reels_9x16",
+  "style": "cinematic corporate commercial, clean modern Japanese office, soft natural window light, shallow depth of field, cool blue and white color grade, premium and trustworthy mood, photorealistic, no text, no lettering, no watermark, no logo",
+  "video_model": "MiniMax-Hailuo-02",
+  "subtitles": true,
+  "font": "Noto Sans CJK JP",
+  "voiceover": {
+    "enabled": true,
+    "voice_id": "Japanese_CalmLady",
+    "speed": 1.05,
+    "script": "毎月のレポート作成に、何時間かけていますか。散らばったデータを、AIが自動でひとつのダッシュボードに。意思決定は、待たなくていい。データ活用の伴走は、私たちにお任せください。"
+  },
+  "bgm": {
+    "path": "assets/bgm/corporate_uplift.mp3",
+    "gain_db": -20
+  },
+  "shots": [
+    {
+      "id": "s1_hook",
+      "seconds": 4,
+      "caption": "そのレポート、まだ手作業ですか？",
+      "image_prompt": "close-up over-the-shoulder shot of a tired Japanese businesswoman in her 30s at a dark desk late at night, surrounded by stacks of printed spreadsheets and multiple monitors showing cluttered tables, blue monitor glow on her face, vertical composition",
+      "motion_prompt": "the camera slowly pushes in toward her face as she sighs and rubs her eyes, subtle handheld movement, paper stacks slightly out of focus in the foreground"
+    },
+    {
+      "id": "s2_solution",
+      "seconds": 6,
+      "caption": "散らばったデータを、AIが自動で統合",
+      "image_prompt": "a sleek modern BI dashboard glowing on a large ultrawide monitor in a bright minimal office, abstract charts and line graphs in blue and teal, data streams converging into a single clean interface, futuristic but realistic, vertical composition",
+      "motion_prompt": "abstract data particles flow in from the edges and converge into the dashboard, charts smoothly animate upward, camera slowly orbits to the right"
+    },
+    {
+      "id": "s3_cta",
+      "seconds": 5,
+      "caption": "データ活用の伴走支援｜まずは無料相談",
+      "image_prompt": "a confident Japanese business team of three smiling while looking at a large wall display with clean data visualizations, bright airy modern office, morning light, professional and optimistic, vertical composition",
+      "motion_prompt": "the camera slowly pulls back to reveal the whole team as they nod and smile, natural subtle movement, warm and bright finish"
+    }
+  ]
+}

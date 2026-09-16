@@ -1,0 +1,26 @@
+# 認証情報 — 絶対にコミットしない
+.env
+.env.*
+!.env.example
+
+# 生成物
+out/
+*.mp4
+*.mov
+*.mp3
+*.wav
+*.jpg
+*.jpeg
+*.png
+!docs/**/*.png
+!assets/brand/**
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
