@@ -28,12 +28,33 @@ from .config import (
     VIDEO_MODEL_LIMITS,
 )
 
-TERMINAL_OK = {"Success", "success"}
-TERMINAL_NG = {"Fail", "fail", "Failed", "failed"}
+# v2 は "succeeded" / "failed" を返す（v1 の "Success" / "Fail" とは別表記）。
+# 表記ゆれで無限待ちにならないよう、小文字化して比較する。
+TERMINAL_OK = {"success", "succeeded"}
+TERMINAL_NG = {"fail", "failed", "failure", "error"}
 
 # H3 の尺は 4〜15 秒の整数
 MIN_DURATION = 4
 MAX_DURATION = 15
+
+
+# API は data URI の MIME から拡張子を復元して検証する。
+# mimetypes は .mp3 -> "audio/mpeg" を返すが、H3 は ".mpeg" を弾く（status_code 2013）ため、
+# 拡張子とサブタイプが一致する形に明示的に寄せる。
+EXPLICIT_MIME = {
+    ".mp3": "audio/mp3",
+    ".wav": "audio/wav",
+    ".m4a": "audio/m4a",
+    ".aac": "audio/aac",
+    ".flac": "audio/flac",
+    ".ogg": "audio/ogg",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+    ".mp4": "video/mp4",
+    ".mov": "video/quicktime",
+}
 
 
 def media_ref(value: str, *, fallback_mime: str) -> str:
@@ -43,7 +64,7 @@ def media_ref(value: str, *, fallback_mime: str) -> str:
     p = Path(value)
     if not p.exists():
         raise MinimaxError(f"ファイルが見つかりません: {value}")
-    mime = mimetypes.guess_type(p.name)[0] or fallback_mime
+    mime = EXPLICIT_MIME.get(p.suffix.lower()) or mimetypes.guess_type(p.name)[0] or fallback_mime
     return f"data:{mime};base64," + base64.b64encode(p.read_bytes()).decode()
 
 
@@ -124,7 +145,7 @@ def build_content(
     if reference_audio:
         content.append({
             "type": "audio_url",
-            "audio_url": {"url": media_ref(reference_audio, fallback_mime="audio/mpeg")},
+            "audio_url": {"url": media_ref(reference_audio, fallback_mime="audio/mp3")},
             "role": "reference_audio",
         })
     return content
@@ -190,7 +211,7 @@ def wait_for(
     while True:
         payload = query(client, task_id)
         task = payload.get("task") or payload
-        status = str(task.get("status", ""))
+        status = str(task.get("status", "")).lower()
         if status in TERMINAL_OK:
             url = ((task.get("content") or {}).get("url")) or task.get("video_url")
             if not url:

@@ -213,13 +213,36 @@ v1 と v2 でパスの生え方が違うため、`api.py` は `/v2/` 始まり�
 （v1 のような `file_id` → `/files/retrieve` の2段構えではない）。
 ポーリング間隔は 10 秒が推奨。
 
-### 未検証の点
+### 実 API で確認済みの挙動（2026-09-16）
 
-実 API キーでの疎通はまだ取れていない。初回実行で食い違いが出やすいのは以下:
+実キーで 1:1 話者動画の生成まで通した。確認できたこと:
 
-1. `image_url` / `audio_url` が **data URI を受けるか**。弾かれる場合は公開 URL への
-   アップロードが必要になる（`talk.media_ref()` は URL をそのまま通すので、
-   URL を渡せば実装変更なしで動く）。
-2. `ratio` を `adaptive` にしたとき、参照生成で出力比が参照画像に従うか。
-3. 応答の入れ子（`task.status` / `task.content.url`）。`talk.wait_for()` は
-   トップレベル直置きの形も拾うようにしてある。
+- `image_url` / `audio_url` は **data URI を受け付ける**。公開 URL へのアップロードは不要。
+- `ratio: "adaptive"` + `reference_image` で、出力比は**参照画像に従う**
+  （1080x1080 の参照画像 → 768x768 の出力）。
+- 応答は `{"task": {"status": ..., "content": {"url": ...}}}` の入れ子。
+- 生成物は **音声つきの mp4**（H.264 + AAC）。リップシンクは参照音声に同期する。
+- 7 秒の生成にかかった時間は約 110 秒。
+
+### ハマりどころ（実際に踏んだもの）
+
+**1. 音声の MIME サブタイプ**
+
+API は data URI の MIME から拡張子を復元して検証する。Python の `mimetypes` は
+`.mp3` に対して `audio/mpeg` を返すが、これを送ると拡張子 `.mpeg` と解釈されて弾かれる:
+
+```
+status_code 2013: content[2].audio_url: invalid param: audio format ".mpeg" not allowed
+```
+
+`talk.EXPLICIT_MIME` で拡張子とサブタイプが一致する形（`.mp3` → `audio/mp3`）に
+明示的に寄せている。`mimetypes` の推測に任せてはいけない。
+
+**2. 完了ステータスの表記**
+
+v2 は `succeeded` / `failed` を返す。v1 の `Success` / `Fail` とは**別表記**。
+`Success` だけを見ていると完了を検知できず、生成済みなのにポーリングし続ける。
+`talk.wait_for()` は小文字化して比較する。
+
+失敗したタスクも `task_id` で後から `query` できるので、
+待ち受け側で取りこぼしても再課金せずに回収できる。
