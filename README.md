@@ -76,7 +76,23 @@ cp .env.example .env
 # → out/videos/cut1.mp4（3秒）と cut1_raw.mp4（生成元の6秒）
 ```
 
-### 2.3 15〜30 秒の広告を一気通貫で作る（推奨）
+### 2.3 アバターがしゃべる動画（リップシンク）
+
+```bash
+./bin/mmx talk --image assets/brand/avatar_1x1.jpg \
+  --script "こんにちは。AIとデータで、御社のマーケティングを支援します。" \
+  --voice male_calm --preset meta_feed_1x1 --name avatar_talk
+# → out/talk/avatar_talk.mp4
+```
+
+`MiniMax-H3` は映像と音声を同時に生成するため、**ナレーションに口が同期します**。
+Hailuo-02（`video` コマンド）は映像しか作らないので、音声を後乗せしても口は合いません。
+話者動画は必ず `talk` を使ってください。
+
+尺は音声の長さに自動追従します（H3 の範囲 4〜15 秒でクランプ）。
+参照画像は 1辺 256〜5760px・比 0.4〜2.5 が必要です。
+
+### 2.4 15〜30 秒の広告を一気通貫で作る（推奨）
 
 ```bash
 ./bin/mmx storyboard briefs/meta_reels_15s_sample.json --check   # 検証のみ、課金なし
@@ -110,6 +126,7 @@ run.json     進捗状態（--resume で途中から再開）
 | `video <prompt>` | 動画生成（`--first-frame` で I2V） |
 | `task <task_id>` | 動画タスクの状態確認 / `--wait` で完了待ち＆DL |
 | `fetch <file_id>` | file_id から動画をダウンロード |
+| `talk --image ... --script ...` | **口が同期した話者動画**（H3 / v2 API） |
 | `voice --text ...` | ナレーション音声生成 |
 | `voices` | 日本語ボイスの別名一覧 |
 | `storyboard <brief>` | brief から広告を一気通貫生成 |

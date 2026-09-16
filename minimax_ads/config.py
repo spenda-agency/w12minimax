@@ -7,16 +7,18 @@ MiniMax の API はモデル名・パラメータが更新されることがあ�
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-# リージョン別 API ベースURL
-BASE_URLS = {
-    "global": "https://api.minimax.io/v1",
-    "cn": "https://api.minimax.chat/v1",
+# リージョン別 API ルート / ベースURL
+API_ROOTS = {
+    "global": "https://api.minimax.io",
+    "cn": "https://api.minimax.chat",
 }
+BASE_URLS = {region: root + "/v1" for region, root in API_ROOTS.items()}
 
 # エンドポイント（ベースURLからの相対パス）
 EP_IMAGE = "/image_generation"
@@ -25,9 +27,15 @@ EP_VIDEO_QUERY = "/query/video_generation"
 EP_FILE_RETRIEVE = "/files/retrieve"
 EP_T2A = "/t2a_v2"
 
+# v2 エンドポイント（MiniMax-H3 系）。base_url ではなく API ルートからの絶対パス。
+EP_V2_VIDEO = "/v2/video_generation"
+EP_V2_VIDEO_QUERY = "/v2/query/video_generation/{task_id}"
+
 # 既定モデル
 DEFAULT_IMAGE_MODEL = "image-01"
 DEFAULT_VIDEO_MODEL = "MiniMax-Hailuo-02"
+# 音声同期（リップシンク）付きの talking video 用。v2 API / content[] プロトコル。
+DEFAULT_TALK_MODEL = "MiniMax-H3"
 DEFAULT_TTS_MODEL = "speech-02-hd"
 
 # 動画モデルごとの制約（送信前バリデーション用。--force で無視可）
@@ -63,7 +71,26 @@ VIDEO_MODEL_LIMITS = {
         "invalid_combos": [],
         "supports_first_frame": False,
     },
+    # v2 API。ネイティブ音声つきで生成され、reference_audio を渡すと口が同期する。
+    "MiniMax-H3": {
+        "durations": list(range(4, 16)),
+        "resolutions": ["768P", "2K"],
+        "invalid_combos": [],
+        "supports_first_frame": True,
+    },
+    "MiniMax-H3-Max": {
+        "durations": list(range(5, 16)),
+        "resolutions": ["480P", "768P"],
+        "invalid_combos": [],
+        "supports_first_frame": True,
+    },
 }
+
+# v2 の content[] で扱えるメディア要件（送信前チェック用）
+H3_IMAGE_MIN_PX = 256
+H3_IMAGE_MAX_PX = 5760
+H3_IMAGE_MIN_RATIO = 0.4
+H3_IMAGE_MAX_RATIO = 2.5
 
 # image-01 が受け付けるアスペクト比
 IMAGE_ASPECT_RATIOS = ["1:1", "16:9", "4:3", "3:2", "2:3", "3:4", "9:16", "21:9"]
@@ -113,6 +140,11 @@ class Settings:
     @property
     def has_key(self) -> bool:
         return bool(self.api_key)
+
+    @property
+    def api_root(self) -> str:
+        """v2 エンドポイント用。base_url からバージョン接尾辞を外した URL。"""
+        return re.sub(r"/v[12]/?$", "", self.base_url.rstrip("/"))
 
 
 def load_settings() -> Settings:

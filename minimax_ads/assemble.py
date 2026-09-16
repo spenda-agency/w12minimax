@@ -54,6 +54,21 @@ def probe_duration(path: Path) -> float:
         return 0.0
 
 
+def probe_size(path: Path) -> tuple[int, int]:
+    """画像/動画の解像度を (width, height) で返す。"""
+    _require_ffmpeg()
+    out = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "v:0",
+         "-show_entries", "stream=width,height", "-of", "csv=p=0:s=x", str(path)],
+        capture_output=True, text=True,
+    )
+    try:
+        w, h = out.stdout.strip().split("x")[:2]
+        return int(w), int(h)
+    except ValueError as e:
+        raise RuntimeError(f"解像度を取得できませんでした: {path}") from e
+
+
 @dataclass
 class ShotClip:
     path: Path

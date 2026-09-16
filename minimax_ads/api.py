@@ -54,7 +54,8 @@ class MinimaxClient:
         params = dict(params or {})
         if with_group_id and self.s.group_id:
             params.setdefault("GroupId", self.s.group_id)
-        url = self.s.base_url + path
+        # /v2/... は base_url(/v1) 配下ではなく API ルート直下に生える
+        url = (self.s.api_root if path.startswith("/v2/") else self.s.base_url) + path
         if params:
             url += "?" + urllib.parse.urlencode(params)
 

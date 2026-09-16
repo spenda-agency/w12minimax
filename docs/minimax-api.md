@@ -142,3 +142,84 @@ MiniMax はモデル名とパラメータが更新されます。ズレたとき
 ```bash
 ./bin/mmx --dry-run video "test" --first-frame out/images/kf1.jpg
 ```
+
+
+---
+
+## MiniMax-H3（v2 API）— 音声同期つき話者動画
+
+Hailuo-02 系（v1）の I2V は**映像だけ**を生成するため、ナレーションを後乗せしても
+口の動きは一致しない。H3 は映像と音声を同一の潜在表現から生成するので、
+`reference_audio` を渡すと**口がその音声に同期する**。
+
+プロトコルが v1 と別系統（`content[]` 配列）なので、実装は `minimax_ads/talk.py` に分離してある。
+
+### エンドポイント
+
+| 用途 | メソッド | パス |
+|---|---|---|
+| タスク作成 | POST | `{api_root}/v2/video_generation` |
+| 状態確認 | GET | `{api_root}/v2/query/video_generation/{task_id}` |
+
+`api_root` は `base_url` からバージョン接尾辞を外したもの（`Settings.api_root`）。
+v1 と v2 でパスの生え方が違うため、`api.py` は `/v2/` 始まりを別扱いにしている。
+
+### リクエスト
+
+```json
+{
+  "model": "MiniMax-H3",
+  "content": [
+    { "type": "text", "text": "英語の映像指示（必須・空不可）" },
+    { "type": "image_url", "image_url": {"url": "..."}, "role": "reference_image" },
+    { "type": "audio_url", "audio_url": {"url": "..."}, "role": "reference_audio" }
+  ],
+  "duration": 6,
+  "resolution": "768P",
+  "ratio": "adaptive"
+}
+```
+
+| パラメータ | 値 |
+|---|---|
+| `model` | `MiniMax-H3`（768P/2K・4〜15秒） / `MiniMax-H3-Max`（480P/768P・5〜15秒） |
+| `duration` | 4〜15 の整数 |
+| `resolution` | `768P` / `2K` |
+| `ratio` | 既定 `adaptive`（参照画像の比率に従う）。T2V では明示が必要 |
+
+`content[]` の `role`:
+
+| role | type | 備考 |
+|---|---|---|
+| `first_frame` / `last_frame` | `image_url` | フレーム条件づけ |
+| `reference_image` | `image_url` | 参照生成。人物の同一性を保つ |
+| `reference_video` | `video_url` | MP4/MOV、H.264/H.265、2〜15秒、≤50MB、合計15秒まで |
+| `reference_audio` | `audio_url` | **これを渡すとリップシンクする** |
+
+**フレーム条件づけ（`first_frame`/`last_frame`）と参照生成（`reference_*`）は排他。**
+混ぜて送るとエラーになるため `talk.build_content()` が送信前に弾く。
+
+### 参照画像の要件
+
+- 1辺 256〜5760px
+- アスペクト比 0.4〜2.5
+- ≤30MB、JPG / PNG / WEBP / HEIC / HEIF
+
+`talk.validate_image()` が送信前に検査する。
+
+### 応答
+
+完了時に `task.content.url` から動画を直接ダウンロードする
+（v1 のような `file_id` → `/files/retrieve` の2段構えではない）。
+ポーリング間隔は 10 秒が推奨。
+
+### 未検証の点
+
+実 API キーでの疎通はまだ取れていない。初回実行で食い違いが出やすいのは以下:
+
+1. `image_url` / `audio_url` が **data URI を受けるか**。弾かれる場合は公開 URL への
+   アップロードが必要になる（`talk.media_ref()` は URL をそのまま通すので、
+   URL を渡せば実装変更なしで動く）。
+2. `ratio` を `adaptive` にしたとき、参照生成で出力比が参照画像に従うか。
+3. 応答の入れ子（`task.status` / `task.content.url`）。`talk.wait_for()` は
+   トップレベル直置きの形も拾うようにしてある。

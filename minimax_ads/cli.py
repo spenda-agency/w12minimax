@@ -7,11 +7,12 @@ import json
 import sys
 from pathlib import Path
 
-from . import assemble, audio, images, storyboard, video
+from . import assemble, audio, images, storyboard, talk, video
 from .api import MinimaxClient, MinimaxError
 from .config import (
     BASE_URLS,
     DEFAULT_IMAGE_MODEL,
+    DEFAULT_TALK_MODEL,
     DEFAULT_TTS_MODEL,
     DEFAULT_VIDEO_MODEL,
     IMAGE_ASPECT_RATIOS,
@@ -118,6 +119,72 @@ def cmd_video(args) -> int:
         path = assemble.trim(raw, dest, args.trim)
         print(f"  {args.trim}s にトリム（生成元 {args.duration}s: {raw}）")
     print(path)
+    return 0
+
+
+def cmd_talk(args) -> int:
+    """アバター画像 + 原稿 → 口が同期した話者動画（MiniMax-H3 / v2 API）。"""
+    client = make_client(args)
+    out_root = Path(args.out) if args.out else client.s.out_dir / "talk"
+    out_root.mkdir(parents=True, exist_ok=True)
+
+    # 1) ナレーション音声（--audio で既存ファイルを使い回せる）
+    if args.audio:
+        voice_path = Path(args.audio)
+        if not voice_path.exists():
+            raise MinimaxError(f"音声が見つかりません: {voice_path}")
+        print(f"■ 音声: 既存を使用 {voice_path}")
+    else:
+        script = Path(args.script_file).read_text(encoding="utf-8") if args.script_file else args.script
+        if not script:
+            raise MinimaxError("--script か --script-file か --audio のいずれかが必要です")
+        voice_path = out_root / f"{args.name}_voice.mp3"
+        print("■ ナレーション生成中…")
+        audio.synthesize(
+            client, script, voice_path,
+            voice_id=audio.JA_VOICES.get(args.voice, args.voice),
+            speed=args.speed, emotion=args.emotion,
+        )
+        print(f"  {voice_path}")
+
+    # 2) 尺は音声に合わせる（H3 は 4〜15 秒）
+    duration = args.duration
+    if duration is None:
+        duration = talk.duration_for_audio(voice_path) if not client.dry_run else 6
+        print(f"■ 尺: 音声に合わせて {duration}s")
+
+    # 3) H3 に投げる
+    print(f"■ 動画生成中…（{args.model} / {duration}s / {args.resolution}）")
+    task_id = talk.submit(
+        client, args.prompt,
+        model=args.model, duration=duration, resolution=args.resolution,
+        ratio=args.ratio, reference_image=args.image,
+        reference_audio=str(voice_path), force=args.force,
+    )
+    if args.no_wait:
+        print(task_id)
+        return 0
+
+    url = talk.wait_for(client, task_id, interval=args.interval)
+    raw = out_root / f"{args.name}_raw.mp4"
+    client.download(url, raw)
+    print(f"  {raw}")
+
+    # 4) 配信面のサイズにそろえる
+    dest = out_root / f"{args.name}.mp4"
+    if args.preset and not client.dry_run:
+        preset = get_preset(args.preset)
+        assemble.run([
+            "ffmpeg", "-y", "-i", str(raw),
+            "-vf", f"scale={preset.width}:{preset.height}:force_original_aspect_ratio=increase,"
+                   f"crop={preset.width}:{preset.height},fps=30,format=yuv420p",
+            "-c:v", "libx264", "-preset", "medium", "-crf", "18",
+            "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(dest),
+        ])
+        print(f"■ {preset.label} にリサイズ")
+    else:
+        raw.replace(dest) if not client.dry_run else dest.write_bytes(b"")
+    print(dest)
     return 0
 
 
@@ -274,6 +341,31 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--out", help="出力ファイルパス")
     sp.add_argument("--force", action="store_true")
     sp.set_defaults(func=cmd_video)
+
+    sp = sub.add_parser("talk", help="アバター画像+原稿から口が同期した話者動画（H3）")
+    sp.add_argument("--image", required=True, help="話者の参照画像（256〜5760px, 比0.4〜2.5）")
+    sp.add_argument("--script", help="ナレーション原稿（日本語）")
+    sp.add_argument("--script-file", help="原稿をファイルから読む")
+    sp.add_argument("--audio", help="既存のナレーション音声を使う（TTSをスキップ）")
+    sp.add_argument("--prompt", default=(
+        "A person speaks directly to the camera in a calm, friendly manner, "
+        "natural lip movement synchronized to the speech, subtle head motion and blinking, "
+        "static background, no text, no lettering, no watermark, no logo"),
+        help="H3 への映像指示（英語）。H3 はテキスト必須")
+    sp.add_argument("--voice", default="male_calm", help="ボイス別名かID（./bin/mmx voices）")
+    sp.add_argument("--speed", type=float, default=1.0)
+    sp.add_argument("--emotion", default=None)
+    sp.add_argument("--duration", type=int, default=None, help="4〜15秒。既定は音声尺に自動追従")
+    sp.add_argument("--resolution", default="768P", choices=["480P", "768P", "2K"])
+    sp.add_argument("--ratio", default="adaptive", help="既定 adaptive（参照画像の比率に従う）")
+    sp.add_argument("--preset", choices=list(PRESETS), help="最終的に合わせる配信面サイズ")
+    sp.add_argument("--model", default=DEFAULT_TALK_MODEL)
+    sp.add_argument("--name", default="talk")
+    sp.add_argument("--no-wait", action="store_true")
+    sp.add_argument("--interval", type=int, default=10)
+    sp.add_argument("--out", help="出力ディレクトリ")
+    sp.add_argument("--force", action="store_true")
+    sp.set_defaults(func=cmd_talk)
 
     sp = sub.add_parser("task", help="動画タスクの状態確認 / 完了待ち")
     sp.add_argument("task_id")
