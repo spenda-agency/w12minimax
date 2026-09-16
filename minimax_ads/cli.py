@@ -112,6 +112,11 @@ def cmd_video(args) -> int:
         prompt_optimizer=not args.no_optimize, force=args.force,
         interval=args.interval,
     )
+    if args.trim:
+        raw = path.with_name(f"{path.stem}_raw{path.suffix}")
+        path.replace(raw)
+        path = assemble.trim(raw, dest, args.trim)
+        print(f"  {args.trim}s にトリム（生成元 {args.duration}s: {raw}）")
     print(path)
     return 0
 
@@ -258,7 +263,8 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("prompt")
     sp.add_argument("--first-frame", help="起点となる画像（縦型はこれで比率が決まる）")
     sp.add_argument("--preset", choices=list(PRESETS))
-    sp.add_argument("--duration", type=int, default=6, choices=[6, 10])
+    sp.add_argument("--duration", type=int, default=6, choices=[6, 10], help="生成尺（API の最短は6秒）")
+    sp.add_argument("--trim", type=float, help="生成後に先頭から指定秒で切り出す（例: 3）")
     sp.add_argument("--resolution", choices=["512P", "720P", "768P", "1080P"])
     sp.add_argument("--model", default=DEFAULT_VIDEO_MODEL)
     sp.add_argument("--name", default="video")

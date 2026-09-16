@@ -81,6 +81,22 @@ def normalize_clip(src: Path, dest: Path, preset: Preset, seconds: float, fps: i
     return dest
 
 
+def trim(src: Path, dest: Path, seconds: float) -> Path:
+    """解像度はそのままに、先頭から指定秒だけ切り出す。
+
+    MiniMax の最短生成尺は 6 秒。3 秒の素材が欲しい場合は 6 秒生成してここで切る
+    （課金は 6 秒分かかる）。
+    """
+    _require_ffmpeg()
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    cmd = ["ffmpeg", "-y", "-i", str(src), "-t", f"{seconds:.3f}",
+           "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p"]
+    cmd += ["-c:a", "copy"] if has_audio(src) else ["-an"]
+    cmd += ["-movflags", "+faststart", str(dest)]
+    run(cmd)
+    return dest
+
+
 def concat(clips: list[Path], dest: Path, work_dir: Path) -> Path:
     _require_ffmpeg()
     work_dir.mkdir(parents=True, exist_ok=True)

@@ -68,6 +68,14 @@ cp .env.example .env
 生成には数分かかります。`--no-wait` で `task_id` だけ受け取り、あとから
 `./bin/mmx task <task_id> --wait` で回収することもできます。
 
+**API の最短生成尺は 6 秒です。** 3 秒のカットが欲しい場合は 6 秒生成して切り出します
+（課金は 6 秒分）。
+
+```bash
+./bin/mmx video "<motion prompt>" --first-frame <画像> --duration 6 --trim 3 --name cut1
+# → out/videos/cut1.mp4（3秒）と cut1_raw.mp4（生成元の6秒）
+```
+
 ### 2.3 15〜30 秒の広告を一気通貫で作る（推奨）
 
 ```bash
