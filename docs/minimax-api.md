@@ -54,7 +54,12 @@
 - `subject_reference`: 人物の一貫性を保ちたいときに参照画像を渡す
   `[{"type": "character", "image_file": "<URL または data URI>"}]`
 
-レスポンス: `data.image_urls[]`
+レスポンス: `data.image_urls[]`（`base64` のときは `data.image_base64[]`）
+
+`--format base64` を使うと、画像を API 応答から直接受け取れます。
+生成物 CDN（`*.oss-*.aliyuncs.com`）が塞がれた環境では `url` だとダウンロードに失敗するので、
+そのときは `base64` を使ってください。**base64 側のフィールド名は実 API 未検証**で、
+`minimax_ads/images.py` は `image_base64` / `image_base64s` / `images` の順に探します。
 
 実装: `minimax_ads/images.py`
 

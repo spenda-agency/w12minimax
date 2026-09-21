@@ -82,6 +82,7 @@ def cmd_image(args) -> int:
         aspect_ratio=aspect, n=args.n, model=args.model,
         prompt_optimizer=not args.no_optimize,
         subject_reference=args.reference,
+        response_format=args.response_format,
         force=args.force,
     )
     for p in paths:
@@ -135,7 +136,7 @@ def cmd_talk(args) -> int:
             raise MinimaxError(f"音声が見つかりません: {voice_path}")
         print(f"■ 音声: 既存を使用 {voice_path}")
     else:
-        script = Path(args.script_file).read_text(encoding="utf-8") if args.script_file else args.script
+        script = Path(args.script_file).read_text(encoding="utf-8").strip() if args.script_file else args.script
         if not script:
             raise MinimaxError("--script か --script-file か --audio のいずれかが必要です")
         voice_path = out_root / f"{args.name}_voice.mp3"
@@ -321,6 +322,10 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--name", default="image", help="ファイル名のベース")
     sp.add_argument("--reference", help="人物の一貫性を保つ参照画像（パス or URL）")
     sp.add_argument("--model", default=DEFAULT_IMAGE_MODEL)
+    sp.add_argument(
+        "--format", dest="response_format", default="url", choices=["url", "base64"],
+        help="base64 にすると生成物CDNを経由せずAPI応答から直接保存する",
+    )
     sp.add_argument("--no-optimize", action="store_true", help="prompt_optimizer を無効化")
     sp.add_argument("--out", help="出力先ディレクトリ")
     sp.add_argument("--force", action="store_true")

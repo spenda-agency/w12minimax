@@ -35,9 +35,10 @@ def generate_images(
     model: str = DEFAULT_IMAGE_MODEL,
     prompt_optimizer: bool = True,
     subject_reference: str | None = None,
+    response_format: str = "url",
     force: bool = False,
 ) -> list[str]:
-    """画像を生成し、画像URLのリストを返す。"""
+    """画像を生成し、画像URL（response_format=base64 なら base64 文字列）のリストを返す。"""
     if not force and aspect_ratio not in IMAGE_ASPECT_RATIOS:
         raise MinimaxError(
             f"aspect_ratio={aspect_ratio} は image-01 非対応です。"
@@ -50,7 +51,7 @@ def generate_images(
         "model": model,
         "prompt": prompt,
         "aspect_ratio": aspect_ratio,
-        "response_format": "url",
+        "response_format": response_format,
         "n": n,
         "prompt_optimizer": prompt_optimizer,
     }
@@ -62,12 +63,31 @@ def generate_images(
 
     payload = client.request("POST", EP_IMAGE, body=body)
     if payload.get("_dry_run"):
+        if response_format == "base64":
+            return ["" for _ in range(n)]
         return [f"https://example.invalid/dry-run-{i + 1}.jpg" for i in range(n)]
 
-    urls = (payload.get("data") or {}).get("image_urls") or []
+    data = payload.get("data") or {}
+    if response_format == "base64":
+        # 生成物 CDN を経由せず API 応答から直接受け取る経路。
+        # 応答のフィールド名は実 API 未検証のため、候補を順に見る。
+        for key in ("image_base64", "image_base64s", "images"):
+            blobs = data.get(key) or []
+            if blobs:
+                return blobs
+        raise MinimaxError(f"画像の base64 が返りませんでした: {payload}")
+
+    urls = data.get("image_urls") or []
     if not urls:
         raise MinimaxError(f"画像URLが返りませんでした: {payload}")
     return urls
+
+
+def decode_image_blob(blob: str) -> bytes:
+    """base64 応答を bytes にする。data URI 形式で返ってきても剥がす。"""
+    if blob.startswith("data:"):
+        blob = blob.split(",", 1)[-1]
+    return base64.b64decode(blob)
 
 
 def generate_and_save(
@@ -76,11 +96,17 @@ def generate_and_save(
     out_dir: Path,
     *,
     stem: str = "image",
+    response_format: str = "url",
     **kwargs,
 ) -> list[Path]:
-    urls = generate_images(client, prompt, **kwargs)
+    refs = generate_images(client, prompt, response_format=response_format, **kwargs)
     saved = []
-    for i, url in enumerate(urls, 1):
-        dest = out_dir / (f"{stem}.jpg" if len(urls) == 1 else f"{stem}_{i:02d}.jpg")
-        saved.append(client.download(url, dest))
+    for i, ref in enumerate(refs, 1):
+        dest = out_dir / (f"{stem}.jpg" if len(refs) == 1 else f"{stem}_{i:02d}.jpg")
+        if response_format == "base64":
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(decode_image_blob(ref))
+            saved.append(dest)
+        else:
+            saved.append(client.download(ref, dest))
     return saved
