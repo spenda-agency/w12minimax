@@ -19,7 +19,7 @@ from pathlib import Path
 
 from . import assemble, audio, images, video
 from .api import MinimaxClient, MinimaxError
-from .config import DEFAULT_IMAGE_MODEL, DEFAULT_VIDEO_MODEL
+from .config import DEFAULT_IMAGE_MODEL, DEFAULT_VIDEO_MODEL, VIDEO_MODEL_LIMITS
 from .presets import Preset, get as get_preset
 
 # MiniMax の動画は 6 秒 / 10 秒単位。必要尺以上を生成して ffmpeg で切る。
@@ -35,6 +35,8 @@ class Shot:
     caption: str = ""
     keyframe: str | None = None      # 既存画像(パス/URL)を使う場合
     use_keyframe: bool = True        # False なら T2V（画像を挟まない）
+    subject_reference: str | None = None   # このカットだけ別の人物参照を使う場合
+    use_subject_reference: bool = True     # False なら brief の人物参照を使わない
     raw: dict = field(default_factory=dict)
 
     @property
@@ -54,6 +56,7 @@ class Brief:
     image_model: str = DEFAULT_IMAGE_MODEL
     video_model: str = DEFAULT_VIDEO_MODEL
     resolution: str | None = None
+    subject_reference: str | None = None   # 全カット共通の人物参照（顔の一貫性）
     voiceover: dict = field(default_factory=dict)
     bgm: dict = field(default_factory=dict)
     subtitles: bool = True
@@ -63,6 +66,17 @@ class Brief:
     @property
     def total_seconds(self) -> float:
         return sum(s.seconds for s in self.shots)
+
+
+def shot_subject_reference(brief: "Brief", shot: "Shot") -> str | None:
+    """このカットで使う人物参照画像を決める。
+
+    手元だけのカットに顔の参照を渡すと意図しない顔が入り込むため、
+    カット側で use_subject_reference=false にして個別に切れるようにしている。
+    """
+    if not shot.use_subject_reference:
+        return None
+    return shot.subject_reference or brief.subject_reference
 
 
 def load_brief(path: Path) -> Brief:
@@ -76,6 +90,8 @@ def load_brief(path: Path) -> Brief:
             caption=s.get("caption", ""),
             keyframe=s.get("keyframe"),
             use_keyframe=bool(s.get("use_keyframe", True)),
+            subject_reference=s.get("subject_reference"),
+            use_subject_reference=bool(s.get("use_subject_reference", True)),
             raw=s,
         )
         for i, s in enumerate(data.get("shots", []))
@@ -91,6 +107,7 @@ def load_brief(path: Path) -> Brief:
         image_model=data.get("image_model", DEFAULT_IMAGE_MODEL),
         video_model=data.get("video_model", DEFAULT_VIDEO_MODEL),
         resolution=data.get("resolution"),
+        subject_reference=data.get("subject_reference"),
         voiceover=data.get("voiceover") or {},
         bgm=data.get("bgm") or {},
         subtitles=bool(data.get("subtitles", True)),
@@ -109,9 +126,23 @@ def validate_brief(brief: Brief) -> list[str]:
         )
     if not 6 <= total <= 60:
         warnings.append(f"合計 {total:.0f}s は広告尺として想定外です（推奨 15〜30s）")
+    resolution = brief.resolution or brief.preset.video_resolution
+    limits = VIDEO_MODEL_LIMITS.get(brief.video_model, {})
+    if limits and resolution not in limits.get("resolutions", [resolution]):
+        warnings.append(
+            f"{brief.video_model} は resolution={resolution} に非対応です"
+            f"（対応: {', '.join(limits['resolutions'])}）"
+        )
     for s in brief.shots:
         if s.seconds > 10:
             warnings.append(f"shot {s.id}: 1カット {s.seconds}s は生成上限(10s)超。分割してください")
+        elif (s.gen_seconds, resolution) in limits.get("invalid_combos", []):
+            # 送信して初めて落ちると、それまでのカットの課金が無駄になる
+            warnings.append(
+                f"shot {s.id}: {s.seconds}s は {s.gen_seconds}s 生成になり、"
+                f"{brief.video_model} は {s.gen_seconds}s と {resolution} の組み合わせに非対応です。"
+                f"カットを6秒以内に分割するか、resolution を下げてください"
+            )
         if s.use_keyframe and not (s.image_prompt or s.keyframe):
             warnings.append(f"shot {s.id}: image_prompt も keyframe もありません")
         if not s.motion_prompt:
@@ -203,6 +234,7 @@ def run_storyboard(
                     aspect_ratio=brief.preset.image_aspect,
                     n=1,
                     model=brief.image_model,
+                    subject_reference=shot_subject_reference(brief, shot),
                     force=force,
                 )
                 keyframe_ref = str(paths[0])

@@ -16,6 +16,7 @@
 | `resolution` | | プリセット値 | 動画解像度の上書き（`512P`/`768P`/`1080P`） |
 | `subtitles` | | `true` | 字幕を焼き込むか |
 | `font` | | 自動選択 | 字幕フォント名。無い場合は入っている日本語フォントに自動フォールバック |
+| `subject_reference` | | なし | 全カット共通の人物参照画像。顔を揃えたいときに指定（パス or URL） |
 | `voiceover` | | なし | ナレーション設定（下記） |
 | `bgm` | | なし | BGM 設定（下記） |
 
@@ -55,6 +56,8 @@
 | `caption` | | `""` | 焼き込む字幕。空なら字幕なし |
 | `keyframe` | | なし | 既存画像を使う場合のパス or URL（`image_prompt` より優先） |
 | `use_keyframe` | | `true` | `false` にすると画像を挟まず T2V。**縦型では非推奨** |
+| `use_subject_reference` | | `true` | `false` でこのカットだけ人物参照を使わない。**手元だけのカットでは必ず `false`**（顔が入り込みます） |
+| `subject_reference` | | なし | このカットだけ別の人物を参照する場合 |
 
 ※ `keyframe` を指定する場合は `image_prompt` 不要。
 
