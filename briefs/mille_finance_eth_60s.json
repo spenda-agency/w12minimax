@@ -2,6 +2,7 @@
   "name": "mille_finance_eth_60s",
   "preset": "youtube_shorts_9x16",
   "style": "casual selfie-style vlog, photorealistic, Japanese man in his 30s, soft natural indoor light from a side window, modern minimal Japanese living room, warm neutral color grade, shallow depth of field, 35mm look, vertical composition, no text, no lettering, no watermark, no logo",
+  "subject_reference": "assets/brand/avatar.png",
   "video_model": "MiniMax-Hailuo-02",
   "subtitles": true,
   "font": "Noto Sans CJK JP",
@@ -38,7 +39,8 @@
       "seconds": 4,
       "caption": "Mille Financeをチェック",
       "image_prompt": "close-up of the hands of a Japanese man in his 30s holding a smartphone in portrait orientation, the phone screen completely blank matte grey with nothing displayed, clean uncluttered wooden table background, crisp product-shot clarity on the device",
-      "motion_prompt": "slow push-in toward the phone held in his hands, subtle handheld movement"
+      "motion_prompt": "slow push-in toward the phone held in his hands, subtle handheld movement",
+      "use_subject_reference": false
     },
     {
       "id": "s4b_face",
@@ -52,14 +54,16 @@
       "seconds": 6,
       "caption": "利回りと一緒に、条件も確認",
       "image_prompt": "close-up of the hands of a Japanese man holding a pen over a small notepad on a wooden table, the notepad page completely blank with no writing and no markings visible, index finger of the other hand resting beside the page",
-      "motion_prompt": "his hand moves the pen slightly above the blank page, slow and deliberate, subtle handheld movement"
+      "motion_prompt": "his hand moves the pen slightly above the blank page, slow and deliberate, subtle handheld movement",
+      "use_subject_reference": false
     },
     {
       "id": "s5b_points",
       "seconds": 6,
       "caption": "利回りと一緒に、条件も確認",
       "image_prompt": "overhead close-up of the hands of a Japanese man, the index finger pointing at a small blank notepad on a wooden table, the page completely blank with no writing and no markings, a pen resting beside it",
-      "motion_prompt": "his index finger moves down the page pointing at three spots in turn, slow and deliberate"
+      "motion_prompt": "his index finger moves down the page pointing at three spots in turn, slow and deliberate",
+      "use_subject_reference": false
     },
     {
       "id": "s6_risk",

@@ -66,8 +66,8 @@ PRESETS: dict[str, Preset] = {
         label="YouTube ショート (9:16)",
         placements="YouTube Shorts",
         width=1080, height=1920, image_aspect="9:16", video_resolution="1080P",
-        crop_to=False, default_seconds=15, max_seconds=30,
-        notes="下部にUI要素が重なるため、字幕は下から420px以上空ける。",
+        crop_to=False, default_seconds=15, max_seconds=60,
+        notes="下部にUI要素が重なるため、字幕は下から420px以上空ける。尺は60秒まで可。",
         safe_area={"top": 250, "bottom": 420, "left": 60, "right": 60},
     ),
     "youtube_bumper_16x9": Preset(
