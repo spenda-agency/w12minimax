@@ -19,7 +19,7 @@ from pathlib import Path
 
 from . import assemble, audio, images, video
 from .api import MinimaxClient, MinimaxError
-from .config import DEFAULT_IMAGE_MODEL, DEFAULT_VIDEO_MODEL
+from .config import DEFAULT_IMAGE_MODEL, DEFAULT_VIDEO_MODEL, VIDEO_MODEL_LIMITS
 from .presets import Preset, get as get_preset
 
 # MiniMax の動画は 6 秒 / 10 秒単位。必要尺以上を生成して ffmpeg で切る。
@@ -126,9 +126,23 @@ def validate_brief(brief: Brief) -> list[str]:
         )
     if not 6 <= total <= 60:
         warnings.append(f"合計 {total:.0f}s は広告尺として想定外です（推奨 15〜30s）")
+    resolution = brief.resolution or brief.preset.video_resolution
+    limits = VIDEO_MODEL_LIMITS.get(brief.video_model, {})
+    if limits and resolution not in limits.get("resolutions", [resolution]):
+        warnings.append(
+            f"{brief.video_model} は resolution={resolution} に非対応です"
+            f"（対応: {', '.join(limits['resolutions'])}）"
+        )
     for s in brief.shots:
         if s.seconds > 10:
             warnings.append(f"shot {s.id}: 1カット {s.seconds}s は生成上限(10s)超。分割してください")
+        elif (s.gen_seconds, resolution) in limits.get("invalid_combos", []):
+            # 送信して初めて落ちると、それまでのカットの課金が無駄になる
+            warnings.append(
+                f"shot {s.id}: {s.seconds}s は {s.gen_seconds}s 生成になり、"
+                f"{brief.video_model} は {s.gen_seconds}s と {resolution} の組み合わせに非対応です。"
+                f"カットを6秒以内に分割するか、resolution を下げてください"
+            )
         if s.use_keyframe and not (s.image_prompt or s.keyframe):
             warnings.append(f"shot {s.id}: image_prompt も keyframe もありません")
         if not s.motion_prompt:

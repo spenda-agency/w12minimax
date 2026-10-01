@@ -4,6 +4,7 @@
   "style": "casual selfie-style vlog, photorealistic, Japanese man in his 30s wearing a plain olive-green crew-neck short-sleeve t-shirt, same beige fabric sofa in the same bright minimal Japanese living room, soft natural indoor light from a side window, warm neutral color grade, shallow depth of field, 35mm look, vertical composition, no text, no lettering, no watermark, no logo",
   "subject_reference": "assets/brand/avatar.png",
   "video_model": "MiniMax-Hailuo-02",
+  "resolution": "768P",
   "subtitles": true,
   "font": "Noto Sans CJK JP",
   "voiceover": {
