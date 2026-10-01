@@ -1,7 +1,7 @@
 {
   "name": "mille_finance_eth_60s",
   "preset": "youtube_shorts_9x16",
-  "style": "casual selfie-style vlog, photorealistic, Japanese man in his 30s, soft natural indoor light from a side window, modern minimal Japanese living room, warm neutral color grade, shallow depth of field, 35mm look, vertical composition, no text, no lettering, no watermark, no logo",
+  "style": "casual selfie-style vlog, photorealistic, Japanese man in his 30s wearing a plain olive-green crew-neck short-sleeve t-shirt, same beige fabric sofa in the same bright minimal Japanese living room, soft natural indoor light from a side window, warm neutral color grade, shallow depth of field, 35mm look, vertical composition, no text, no lettering, no watermark, no logo",
   "subject_reference": "assets/brand/avatar.png",
   "video_model": "MiniMax-Hailuo-02",
   "subtitles": true,
@@ -17,21 +17,21 @@
       "id": "s1_hook",
       "seconds": 5,
       "caption": "ETH、そのまま持ってる？",
-      "image_prompt": "front-facing selfie shot of a Japanese man in his 30s sitting on a fabric sofa, holding the camera at arm's length, leaning slightly toward the lens with a friendly questioning expression, direct eye contact with the camera",
+      "image_prompt": "tight front-facing selfie shot of a Japanese man in his 30s sitting on a fabric sofa, head and shoulders filling the frame, no camera or phone visible in frame, leaning slightly toward the lens with a friendly questioning expression, direct eye contact",
       "motion_prompt": "the man leans a little closer to the camera as he speaks, subtle handheld sway"
     },
     {
       "id": "s2_empathy",
       "seconds": 8,
       "caption": "運用って難しそう…",
-      "image_prompt": "the same Japanese man sitting on the sofa looking down at a smartphone held in one hand, thoughtful expression with a slight frown, the phone screen blank and angled away from the camera",
+      "image_prompt": "a Japanese man in his 30s sitting on a sofa, holding a smartphone clearly visible in one hand at chest height with the screen facing away from the viewer, looking down at it with a thoughtful expression and a slight frown, his face and the phone both in frame",
       "motion_prompt": "he slowly tilts his head while looking at the phone, subtle handheld movement"
     },
     {
       "id": "s3_option",
       "seconds": 9,
       "caption": "知っておきたい『ステーキング』",
-      "image_prompt": "the same Japanese man having placed the smartphone face down on a low table, now facing the camera and talking, one open palm gesture at chest height, relaxed explaining posture",
+      "image_prompt": "medium close-up of a Japanese man in his 30s sitting on a sofa facing the camera and talking, head and upper chest filling the frame, a smartphone lying face down on the low table in the soft foreground, one open palm raised at chest height in an explaining gesture",
       "motion_prompt": "he gestures once with his open palm as he talks, slow subtle push-in"
     },
     {
@@ -46,7 +46,7 @@
       "id": "s4b_face",
       "seconds": 5,
       "caption": "Mille Financeをチェック",
-      "image_prompt": "medium close-up of the same Japanese man looking slightly down and to the side at something off-camera with an interested, attentive expression, soft window light across his face",
+      "image_prompt": "medium close-up of a Japanese man in his 30s looking slightly down and to the side at something off-camera with an interested, attentive expression, sitting on a sofa, soft window light across his face",
       "motion_prompt": "he glances up toward the camera and nods slightly, subtle handheld sway"
     },
     {
