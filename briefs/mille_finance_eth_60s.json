@@ -1,0 +1,79 @@
+{
+  "name": "mille_finance_eth_60s",
+  "preset": "youtube_shorts_9x16",
+  "style": "casual selfie-style vlog, photorealistic, Japanese man in his 30s, soft natural indoor light from a side window, modern minimal Japanese living room, warm neutral color grade, shallow depth of field, 35mm look, vertical composition, no text, no lettering, no watermark, no logo",
+  "video_model": "MiniMax-Hailuo-02",
+  "subtitles": true,
+  "font": "Noto Sans CJK JP",
+  "voiceover": {
+    "enabled": true,
+    "voice_id": "Japanese_IntellectualSenior",
+    "speed": 1.0,
+    "script": "イーサ、すぐ売るつもりはないけど、このまま持ってるだけでいいのかな、って思ったことない？運用って聞くと、難しそうだし、ずっとチャートを見なきゃいけないイメージ、あるよね。そこで知っておきたいのが、ステーキング。イーサリアムのネットワークを支えることで、報酬を受け取る仕組みです。今回は、イーサの運用サービス、ミル・ファイナンスをチェック。まずは、どんな仕組みなのか見てみます。見たいのは、利回りだけじゃなくて、報酬の仕組み、手数料、出金の条件。自分が使いたいときに、どう引き出せるかも大事。報酬があっても、イーサの価格が下がれば、円で見た資産は減ることも。そこまで理解して、自分に合うか考えたいよね。イーサの運用が気になる人は、概要欄からミル・ファイナンスをチェック。まずは、仕組みを知るところから。"
+  },
+  "shots": [
+    {
+      "id": "s1_hook",
+      "seconds": 5,
+      "caption": "ETH、そのまま持ってる？",
+      "image_prompt": "front-facing selfie shot of a Japanese man in his 30s sitting on a fabric sofa, holding the camera at arm's length, leaning slightly toward the lens with a friendly questioning expression, direct eye contact with the camera",
+      "motion_prompt": "the man leans a little closer to the camera as he speaks, subtle handheld sway"
+    },
+    {
+      "id": "s2_empathy",
+      "seconds": 8,
+      "caption": "運用って難しそう…",
+      "image_prompt": "the same Japanese man sitting on the sofa looking down at a smartphone held in one hand, thoughtful expression with a slight frown, the phone screen blank and angled away from the camera",
+      "motion_prompt": "he slowly tilts his head while looking at the phone, subtle handheld movement"
+    },
+    {
+      "id": "s3_option",
+      "seconds": 9,
+      "caption": "知っておきたい『ステーキング』",
+      "image_prompt": "the same Japanese man having placed the smartphone face down on a low table, now facing the camera and talking, one open palm gesture at chest height, relaxed explaining posture",
+      "motion_prompt": "he gestures once with his open palm as he talks, slow subtle push-in"
+    },
+    {
+      "id": "s4a_device",
+      "seconds": 4,
+      "caption": "Mille Financeをチェック",
+      "image_prompt": "close-up of the hands of a Japanese man in his 30s holding a smartphone in portrait orientation, the phone screen completely blank matte grey with nothing displayed, clean uncluttered wooden table background, crisp product-shot clarity on the device",
+      "motion_prompt": "slow push-in toward the phone held in his hands, subtle handheld movement"
+    },
+    {
+      "id": "s4b_face",
+      "seconds": 5,
+      "caption": "Mille Financeをチェック",
+      "image_prompt": "medium close-up of the same Japanese man looking slightly down and to the side at something off-camera with an interested, attentive expression, soft window light across his face",
+      "motion_prompt": "he glances up toward the camera and nods slightly, subtle handheld sway"
+    },
+    {
+      "id": "s5a_points",
+      "seconds": 6,
+      "caption": "利回りと一緒に、条件も確認",
+      "image_prompt": "close-up of the hands of a Japanese man holding a pen over a small notepad on a wooden table, the notepad page completely blank with no writing and no markings visible, index finger of the other hand resting beside the page",
+      "motion_prompt": "his hand moves the pen slightly above the blank page, slow and deliberate, subtle handheld movement"
+    },
+    {
+      "id": "s5b_points",
+      "seconds": 6,
+      "caption": "利回りと一緒に、条件も確認",
+      "image_prompt": "overhead close-up of the hands of a Japanese man, the index finger pointing at a small blank notepad on a wooden table, the page completely blank with no writing and no markings, a pen resting beside it",
+      "motion_prompt": "his index finger moves down the page pointing at three spots in turn, slow and deliberate"
+    },
+    {
+      "id": "s6_risk",
+      "seconds": 10,
+      "caption": "仕組みとリスクを知って選ぶ",
+      "image_prompt": "medium shot of the same Japanese man facing the camera with a calm, measured expression, hands relaxed in his lap, sitting on the sofa, slightly more serious tone",
+      "motion_prompt": "he nods slowly once while talking to the camera, very subtle handheld movement"
+    },
+    {
+      "id": "s7_cta",
+      "seconds": 7,
+      "caption": "詳しくは概要欄へ",
+      "image_prompt": "the same Japanese man holding up a smartphone toward the camera in portrait orientation at chest height with a light smile, the phone screen completely blank matte grey with nothing displayed",
+      "motion_prompt": "he raises the phone slightly higher toward the camera, slow pull-back"
+    }
+  ]
+}
