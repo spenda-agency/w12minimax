@@ -19,7 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from minimax_ads import assemble, audio, storyboard, video  # noqa: E402
+from minimax_ads import assemble, audio, cli, storyboard, video  # noqa: E402
 from minimax_ads.api import MinimaxClient, MinimaxError  # noqa: E402
 from minimax_ads.config import Settings  # noqa: E402
 from minimax_ads.presets import get as get_preset  # noqa: E402
@@ -197,6 +197,44 @@ class TestSegmentedVoice(unittest.TestCase):
             make_audio(p, 1)
             with self.assertRaises(ValueError):
                 assemble.concat_audio([p], Path(td) / "x.mp3", [0.1, 0.2])
+
+
+class TestTalkRecipe(unittest.TestCase):
+    """talk レシピ（制作条件の再現可能な保存）。"""
+
+    RECIPE = Path(__file__).resolve().parent.parent / "briefs/talk/consultant_female_4.json"
+
+    def _run(self, extra: list[str]) -> str:
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            cli.main(["--dry-run", "talk", "--recipe", str(self.RECIPE)] + extra)
+        return buf.getvalue()
+
+    def test_recipe_drives_tts_and_h3(self):
+        with tempfile.TemporaryDirectory() as td:
+            out = self._run(["--out", td])
+            # segments のぶんだけ TTS が呼ばれる
+            self.assertEqual(3, out.count("/v1/t2a_v2"))
+            # H3 に参照画像と参照音声の両方が載る
+            self.assertIn("/v2/video_generation", out)
+            self.assertIn('"role": "reference_image"', out)
+            self.assertIn('"role": "reference_audio"', out)
+            self.assertIn('"resolution": "768P"', out)
+
+    def test_cli_flag_overrides_recipe(self):
+        with tempfile.TemporaryDirectory() as td:
+            out = self._run(["--out", td, "--resolution", "2K"])
+            self.assertIn('"resolution": "2K"', out)
+            self.assertNotIn('"resolution": "768P"', out)
+
+    def test_image_is_required_somewhere(self):
+        with tempfile.TemporaryDirectory() as td:
+            recipe = Path(td) / "no_image.json"
+            recipe.write_text(json.dumps({"script": "こんにちは"}), encoding="utf-8")
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                rc = cli.main(["--dry-run", "talk", "--recipe", str(recipe), "--out", td])
+            self.assertEqual(1, rc)
 
 
 class TestDryRun(unittest.TestCase):

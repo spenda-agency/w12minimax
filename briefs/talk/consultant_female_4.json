@@ -1,0 +1,16 @@
+{
+  "name": "consultant_female_4",
+  "image": "assets/brand/kf_consultant_female_4.jpg",
+  "voice": "female_bright",
+  "speed": 1.0,
+  "segments": [
+    { "text": "集客支援、エーアイ", "pause_after": 0.05 },
+    { "text": "と", "pause_after": 0.1 },
+    { "text": "システム開発を、一貫して支援します。" }
+  ],
+  "prompt": "a businesswoman speaking to the camera with a warm confident expression. for the first two thirds of the clip she keeps both arms relaxed down at her sides and makes no gesture at all. only near the very end, as she finishes her sentence, she lifts her left hand up to chest height in a natural unforced speaking gesture, palm slightly open, the way a presenter emphasises a closing point. the gesture is small, smooth and late, not theatrical. minimal head movement, static camera, bright modern office background",
+  "preset": "meta_reels_9x16",
+  "resolution": "768P",
+  "ratio": "adaptive",
+  "trim_seconds": 6.45
+}
