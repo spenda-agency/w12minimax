@@ -59,8 +59,13 @@
 
 ## 既知の未検証事項
 
-**実 API でのレスポンス検証は未実施**（API キー未入手のため）。
-v2/H3 まわりで特に怪しいのは data URI の可否・`ratio` の扱い・応答の入れ子。
-詳細は `docs/minimax-api.md` の「MiniMax-H3（v2 API）」末尾を参照。
-初回実行で食い違いが出たら `docs/minimax-api.md` の「仕様変更への対応」に従って直す。
+実 API で確認済み（詳細は `docs/minimax-api.md` の各「実 API で確認済みの挙動」）:
+
+- **v2 / H3**: 1:1 話者動画の生成まで通った。data URI 可、`ratio: adaptive` は参照画像に従う、
+  応答は `task.content.url`、完了は小文字の `succeeded`、音声 MIME は `audio/mp3` に寄せる必要あり
+- **v1 / image-01 の `subject_reference`**: data URI 可。参照画像が横長でも
+  `aspect_ratio` で指定した比率の画が生成され、顔の同一性は保たれる（brief の `cast` がこの経路）
+
+未検証: v1 の動画生成（Hailuo-02 / S2V-01）、音声合成（t2a_v2）。
+食い違いが出たら `docs/minimax-api.md` の「仕様変更への対応」に従って直す。
 ffmpeg の編集パイプライン（連結・字幕焼き込み・音声ミックス・書き出し）は実ファイルで動作確認済み。
