@@ -1,0 +1,34 @@
+{
+  "name": "cast_15s_draft",
+  "preset": "meta_reels_9x16",
+  "subtitles": false,
+  "style": "premium corporate commercial, photorealistic, bright modern Japanese office with large windows, soft natural daylight, shallow depth of field, clean navy and white palette, calm and trustworthy mood, vertical composition, no text, no lettering, no watermark, no logo",
+  "video_model": "MiniMax-Hailuo-02",
+  "cast": {
+    "male": "assets/brand/consultant_male_2.jpg",
+    "female": "assets/brand/consultant_female_4.jpg"
+  },
+  "shots": [
+    {
+      "id": "s1_problem",
+      "seconds": 5,
+      "cast": "female",
+      "image_prompt": "a businesswoman in a dark suit standing in a bright modern office corridor, looking down at a tablet with a concerned expression, soft daylight from large windows behind her, waist-up vertical framing",
+      "motion_prompt": "she looks up from the tablet toward the camera with a slight frown, then exhales softly, very subtle handheld camera drift, natural light shifting gently"
+    },
+    {
+      "id": "s2_solution",
+      "seconds": 5,
+      "cast": "male",
+      "image_prompt": "a businessman in a dark suit with glasses standing beside a large wall display in a bright modern office, gesturing toward abstract blue data visualizations on the screen, confident and approachable expression, waist-up vertical framing",
+      "motion_prompt": "he turns from the display toward the camera and gestures with an open hand while explaining, the charts on the screen animate subtly behind him, slow camera push-in"
+    },
+    {
+      "id": "s3_outcome",
+      "seconds": 5,
+      "cast": "female",
+      "image_prompt": "the same businesswoman now smiling with relief in the same bright office, holding the tablet at her side, standing confidently with large windows behind her, waist-up vertical framing",
+      "motion_prompt": "she smiles and nods once toward the camera, shoulders relaxing, slow camera pull-back, warm bright finish"
+    }
+  ]
+}

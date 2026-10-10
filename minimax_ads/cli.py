@@ -239,8 +239,14 @@ def cmd_storyboard(args) -> int:
 
     print(f"■ {brief.name} / {brief.preset.label}")
     print(f"  カット数 {len(brief.shots)} / 合計 {brief.total_seconds:.0f}s")
+    if brief.cast:
+        print("  キャスト:")
+        for name, ref in brief.cast.items():
+            shots = [s.id for s in brief.shots if s.cast == name]
+            print(f"   - {name}: {ref}  → {', '.join(shots) if shots else '(未使用)'}")
     for s in brief.shots:
-        print(f"   - {s.id}: {s.seconds:>4.1f}s (生成 {s.gen_seconds}s)  {s.caption or s.motion_prompt[:40]}")
+        cast = f" [{s.cast}]" if s.cast else ""
+        print(f"   - {s.id}: {s.seconds:>4.1f}s (生成 {s.gen_seconds}s){cast}  {s.caption or s.motion_prompt[:40]}")
     est_img = sum(1 for s in brief.shots if s.use_keyframe and not s.keyframe)
     est_vid_s = sum(s.gen_seconds for s in brief.shots)
     print(f"  API呼び出し見込み: 画像 {est_img}枚 / 動画 {len(brief.shots)}本 計{est_vid_s}秒"
@@ -289,7 +295,10 @@ def cmd_models(args) -> int:
     for name, lim in VIDEO_MODEL_LIMITS.items():
         bad = "".join(f" / 非対応: {d}s+{r}" for d, r in lim["invalid_combos"])
         print(f"  {name:<20} duration={lim['durations']} resolution={lim['resolutions']}"
-              f" first_frame={'○' if lim['supports_first_frame'] else '×'}{bad}")
+              f" first_frame={'○' if lim['supports_first_frame'] else '×'}"
+              f" 人物参照={'○' if lim.get('supports_subject_reference') else '×'}{bad}")
+    print("\n※ 動画生成に人物参照を直接渡せるのは S2V-01 のみ。それ以外は image-01 の")
+    print("  subject_reference でキーフレームを作り first_frame_image に渡します（brief の cast）。")
     return 0
 
 

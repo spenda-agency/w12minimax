@@ -8,6 +8,8 @@ ffmpeg で合成した映像を素材に、編集パイプラインが実際に
 
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import subprocess
 import sys
@@ -17,8 +19,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from minimax_ads import assemble, storyboard  # noqa: E402
-from minimax_ads.api import MinimaxClient  # noqa: E402
+from minimax_ads import assemble, storyboard, video  # noqa: E402
+from minimax_ads.api import MinimaxClient, MinimaxError  # noqa: E402
 from minimax_ads.config import Settings  # noqa: E402
 from minimax_ads.presets import get as get_preset  # noqa: E402
 
@@ -69,6 +71,76 @@ class TestBrief(unittest.TestCase):
         self.assertEqual(6, storyboard.Shot("s", 6).gen_seconds)
         self.assertEqual(10, storyboard.Shot("s", 7).gen_seconds)
         self.assertIsNotNone(brief)
+
+
+class TestCast(unittest.TestCase):
+    """人物参照（cast）の検証と、リクエストボディへの反映。"""
+
+    def _brief(self, td: str, cast: dict, shots: list) -> storyboard.Brief:
+        data = {**BRIEF, "cast": cast, "shots": shots}
+        p = Path(td) / "cast.json"
+        p.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+        return storyboard.load_brief(p)
+
+    def test_missing_reference_and_unknown_cast_warn(self):
+        with tempfile.TemporaryDirectory() as td:
+            brief = self._brief(
+                td,
+                {"male": str(Path(td) / "nope.jpg")},
+                [{"id": "s1", "seconds": 5, "cast": "female",
+                  "image_prompt": "a", "motion_prompt": "b"}],
+            )
+            warnings = "\n".join(storyboard.validate_brief(brief))
+            self.assertIn("参照画像が見つかりません", warnings)
+            self.assertIn("brief.cast に定義されていません", warnings)
+
+    def test_same_cast_in_three_shots_warns(self):
+        with tempfile.TemporaryDirectory() as td:
+            ref = Path(td) / "face.jpg"
+            ref.write_bytes(b"x")
+            shots = [
+                {"id": f"s{i}", "seconds": 5, "cast": "male",
+                 "image_prompt": "a", "motion_prompt": "b"}
+                for i in range(1, 4)
+            ]
+            brief = self._brief(td, {"male": str(ref)}, shots)
+            self.assertIn("2カットまでを推奨", "\n".join(storyboard.validate_brief(brief)))
+
+    def test_keyframe_request_carries_subject_reference(self):
+        """cast を指定したカットでは image_generation に subject_reference が載る。"""
+        settings = Settings(api_key="", group_id="", region="global",
+                            base_url="https://api.minimax.io/v1", timeout=10,
+                            max_retries=0, out_dir=Path("out"))
+        client = MinimaxClient(settings, dry_run=True)
+        with tempfile.TemporaryDirectory() as td:
+            ref = Path(td) / "face.jpg"
+            ref.write_bytes(b"\xff\xd8\xff")  # JPEG マジックナンバーだけのダミー
+            brief = self._brief(
+                td, {"male": str(ref)},
+                [{"id": "s1", "seconds": 5, "cast": "male",
+                  "image_prompt": "a", "motion_prompt": "b"}],
+            )
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                storyboard.run_storyboard(client, brief, Path(td) / "out", skip_assemble=True)
+            out = buf.getvalue()
+            self.assertIn('"subject_reference"', out)
+            self.assertIn('"type": "character"', out)
+            self.assertIn('"image_file": "data:image/jpeg;base64,', out)
+
+    def test_video_model_rejects_subject_reference_except_s2v(self):
+        settings = Settings(api_key="", group_id="", region="global",
+                            base_url="https://api.minimax.io/v1", timeout=10,
+                            max_retries=0, out_dir=Path("out"))
+        client = MinimaxClient(settings, dry_run=True)
+        with self.assertRaises(MinimaxError):
+            video.submit(client, "x", model="MiniMax-Hailuo-02", subject_reference="https://e/x.jpg")
+        # S2V-01 は image が文字列の配列になる
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            video.submit(client, "x", model="S2V-01", duration=6, resolution="720P",
+                         subject_reference="https://example.invalid/face.jpg")
+        self.assertIn('"image": [', buf.getvalue())
 
 
 class TestDryRun(unittest.TestCase):

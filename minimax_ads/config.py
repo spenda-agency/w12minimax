@@ -39,6 +39,9 @@ DEFAULT_TALK_MODEL = "MiniMax-H3"
 DEFAULT_TTS_MODEL = "speech-02-hd"
 
 # 動画モデルごとの制約（送信前バリデーション用。--force で無視可）
+# supports_subject_reference: 動画生成リクエストに人物参照画像を直接渡せるか。
+#   渡せるのは S2V-01 のみで、フィールド名は image_generation 側（image_file）と
+#   異なり subject_reference[].image（文字列の配列）になる。
 VIDEO_MODEL_LIMITS = {
     "MiniMax-Hailuo-02": {
         "durations": [6, 10],
@@ -46,30 +49,35 @@ VIDEO_MODEL_LIMITS = {
         # 1080P は 6 秒のみ、512P は 6/10 秒（10秒は768P以下）
         "invalid_combos": [(10, "1080P")],
         "supports_first_frame": True,
+        "supports_subject_reference": False,
     },
     "T2V-01-Director": {
         "durations": [6],
         "resolutions": ["720P"],
         "invalid_combos": [],
         "supports_first_frame": False,
+        "supports_subject_reference": False,
     },
     "I2V-01-Director": {
         "durations": [6],
         "resolutions": ["720P"],
         "invalid_combos": [],
         "supports_first_frame": True,
+        "supports_subject_reference": False,
     },
     "I2V-01-live": {
         "durations": [6],
         "resolutions": ["720P"],
         "invalid_combos": [],
         "supports_first_frame": True,
+        "supports_subject_reference": False,
     },
     "S2V-01": {
         "durations": [6],
         "resolutions": ["720P"],
         "invalid_combos": [],
         "supports_first_frame": False,
+        "supports_subject_reference": True,
     },
     # v2 API。ネイティブ音声つきで生成され、reference_audio を渡すと口が同期する。
     "MiniMax-H3": {

@@ -18,6 +18,20 @@ RETRYABLE_HTTP = {408, 429, 500, 502, 503, 504}
 RETRYABLE_STATUS = {1002, 1013, 1039, 1001}
 
 
+MAX_DRY_RUN_VALUE = 120
+
+
+def _abbreviate(value: Any) -> Any:
+    """dry-run 表示用。base64 data URI などの長い文字列を省略する。"""
+    if isinstance(value, str) and len(value) > MAX_DRY_RUN_VALUE:
+        return f"{value[:MAX_DRY_RUN_VALUE]}…<省略: 全{len(value)}文字>"
+    if isinstance(value, dict):
+        return {k: _abbreviate(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_abbreviate(v) for v in value]
+    return value
+
+
 class MinimaxError(RuntimeError):
     def __init__(self, message: str, *, status_code: int | None = None, payload: Any = None):
         self.status_code = status_code
@@ -62,7 +76,7 @@ class MinimaxClient:
         if self.dry_run:
             print(f"[dry-run] {method} {url}")
             if body is not None:
-                print("[dry-run] body: " + json.dumps(body, ensure_ascii=False, indent=2))
+                print("[dry-run] body: " + json.dumps(_abbreviate(body), ensure_ascii=False, indent=2))
             return {"_dry_run": True}
 
         if not self.s.api_key:

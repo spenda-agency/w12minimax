@@ -35,6 +35,7 @@ class Shot:
     caption: str = ""
     keyframe: str | None = None      # 既存画像(パス/URL)を使う場合
     use_keyframe: bool = True        # False なら T2V（画像を挟まない）
+    cast: str | None = None          # brief.cast のキー。この人物を登場させる
     raw: dict = field(default_factory=dict)
 
     @property
@@ -51,6 +52,8 @@ class Brief:
     preset: Preset
     shots: list[Shot]
     style: str = ""
+    # キャスト名 → 人物参照画像(パス or URL)。shots[].cast から参照する。
+    cast: dict[str, str] = field(default_factory=dict)
     image_model: str = DEFAULT_IMAGE_MODEL
     video_model: str = DEFAULT_VIDEO_MODEL
     resolution: str | None = None
@@ -76,6 +79,7 @@ def load_brief(path: Path) -> Brief:
             caption=s.get("caption", ""),
             keyframe=s.get("keyframe"),
             use_keyframe=bool(s.get("use_keyframe", True)),
+            cast=s.get("cast"),
             raw=s,
         )
         for i, s in enumerate(data.get("shots", []))
@@ -88,6 +92,7 @@ def load_brief(path: Path) -> Brief:
         preset=get_preset(data.get("preset", "meta_reels_9x16")),
         shots=shots,
         style=data.get("style", ""),
+        cast=data.get("cast") or {},
         image_model=data.get("image_model", DEFAULT_IMAGE_MODEL),
         video_model=data.get("video_model", DEFAULT_VIDEO_MODEL),
         resolution=data.get("resolution"),
@@ -109,6 +114,12 @@ def validate_brief(brief: Brief) -> list[str]:
         )
     if not 6 <= total <= 60:
         warnings.append(f"合計 {total:.0f}s は広告尺として想定外です（推奨 15〜30s）")
+    # キャストの参照画像は、生成を始める前に解決できることを確かめる
+    for name, ref in brief.cast.items():
+        if not ref.startswith(("http://", "https://", "data:")) and not Path(ref).exists():
+            warnings.append(f"cast {name}: 参照画像が見つかりません: {ref}")
+
+    appearances: dict[str, int] = {}
     for s in brief.shots:
         if s.seconds > 10:
             warnings.append(f"shot {s.id}: 1カット {s.seconds}s は生成上限(10s)超。分割してください")
@@ -116,6 +127,22 @@ def validate_brief(brief: Brief) -> list[str]:
             warnings.append(f"shot {s.id}: image_prompt も keyframe もありません")
         if not s.motion_prompt:
             warnings.append(f"shot {s.id}: motion_prompt が空です")
+        if s.cast:
+            if s.cast not in brief.cast:
+                warnings.append(f"shot {s.id}: cast '{s.cast}' が brief.cast に定義されていません")
+            if s.keyframe:
+                warnings.append(f"shot {s.id}: keyframe 指定時は cast が無視されます")
+            if not s.use_keyframe:
+                warnings.append(f"shot {s.id}: use_keyframe=false では cast を使えません")
+            appearances[s.cast] = appearances.get(s.cast, 0) + 1
+
+    # 同一人物を跨がせるほど見た目がぶれる（docs/prompting.md 参照）
+    for name, count in appearances.items():
+        if count > 2:
+            warnings.append(
+                f"cast {name}: {count}カットに登場します。"
+                "同一人物の一貫性は保証されないため2カットまでを推奨します"
+            )
     return warnings
 
 
@@ -194,7 +221,11 @@ def run_storyboard(
                 keyframe_ref = st["keyframe"]
                 print(f"  keyframe: 既存を再利用 {keyframe_ref}")
             else:
-                print("  keyframe 生成中…")
+                reference = brief.cast.get(shot.cast) if shot.cast else None
+                if reference:
+                    print(f"  keyframe 生成中…（cast: {shot.cast}）")
+                else:
+                    print("  keyframe 生成中…")
                 paths = images.generate_and_save(
                     client,
                     build_image_prompt(brief, shot),
@@ -203,6 +234,7 @@ def run_storyboard(
                     aspect_ratio=brief.preset.image_aspect,
                     n=1,
                     model=brief.image_model,
+                    subject_reference=reference,
                     force=force,
                 )
                 keyframe_ref = str(paths[0])

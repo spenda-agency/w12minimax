@@ -13,7 +13,13 @@ TERMINAL_OK = {"Success"}
 TERMINAL_NG = {"Fail"}
 
 
-def validate(model: str, duration: int, resolution: str, has_first_frame: bool) -> None:
+def validate(
+    model: str,
+    duration: int,
+    resolution: str,
+    has_first_frame: bool,
+    has_subject_reference: bool = False,
+) -> None:
     limits = VIDEO_MODEL_LIMITS.get(model)
     if not limits:
         return  # 未知のモデルはそのまま送る（新モデル対応のため）
@@ -29,6 +35,13 @@ def validate(model: str, duration: int, resolution: str, has_first_frame: bool) 
         raise MinimaxError(f"{model} は duration={duration} と resolution={resolution} の組み合わせに非対応です")
     if has_first_frame and not limits["supports_first_frame"]:
         raise MinimaxError(f"{model} は first_frame_image に非対応です（I2V 系モデルを使ってください）")
+    if has_subject_reference and not limits.get("supports_subject_reference"):
+        raise MinimaxError(
+            f"{model} は subject_reference に非対応です。"
+            "動画生成に人物参照を直接渡せるのは S2V-01 のみです。"
+            "それ以外のモデルでは image-01 の subject_reference でキーフレームを作り、"
+            "first_frame_image として渡してください。"
+        )
 
 
 def submit(
@@ -39,12 +52,13 @@ def submit(
     duration: int = 6,
     resolution: str = "1080P",
     first_frame: str | None = None,
+    subject_reference: str | None = None,
     prompt_optimizer: bool = True,
     force: bool = False,
 ) -> str:
     """生成タスクを投げて task_id を返す。"""
     if not force:
-        validate(model, duration, resolution, bool(first_frame))
+        validate(model, duration, resolution, bool(first_frame), bool(subject_reference))
 
     body: dict = {
         "model": model,
@@ -57,6 +71,12 @@ def submit(
         # 出力アスペクト比は first_frame_image の比率に従う。
         # 9:16 / 4:5 の縦型広告では必ずキーフレームを先に作ること。
         body["first_frame_image"] = as_image_ref(first_frame)
+    if subject_reference:
+        # S2V-01 専用。image_generation 側の image_file とは構造が異なり、
+        # image は文字列の配列（参照画像は1枚のみ）。
+        body["subject_reference"] = [
+            {"type": "character", "image": [as_image_ref(subject_reference)]}
+        ]
 
     payload = client.request("POST", EP_VIDEO, body=body)
     if payload.get("_dry_run"):

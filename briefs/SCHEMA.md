@@ -11,6 +11,7 @@
 | `preset` | ○ | `meta_reels_9x16` | 配信面プリセット（`./bin/mmx presets` で一覧） |
 | `shots` | ○ | — | カット定義の配列 |
 | `style` | | `""` | 全カット共通の画のトーン。`image_prompt` の後ろに連結される |
+| `cast` | | なし | キャスト名 → 人物参照画像のパス or URL（下記） |
 | `video_model` | | `MiniMax-Hailuo-02` | 動画モデル |
 | `image_model` | | `image-01` | 画像モデル |
 | `resolution` | | プリセット値 | 動画解像度の上書き（`512P`/`768P`/`1080P`） |
@@ -34,6 +35,37 @@
 
 `voice_id` は `./bin/mmx voices` の一覧か、MiniMax コンソールで確認した ID を指定します。
 
+### `cast`（特定の人物を登場させる）
+
+手元の人物写真を主役として各カットに登場させたいときに使います。
+
+```json
+{
+  "cast": {
+    "male":   "assets/brand/consultant_male_2.jpg",
+    "female": "assets/brand/consultant_female_4.jpg"
+  },
+  "shots": [
+    { "id": "s1", "seconds": 5, "cast": "female", "image_prompt": "...", "motion_prompt": "..." }
+  ]
+}
+```
+
+仕組み: キーフレーム生成時に image-01 の `subject_reference` として参照画像を渡し、
+**顔を保ったままプリセットのアスペクト比で新しい画を作ります**。
+そのキーフレームを `first_frame_image` として動画化するため、
+横長のポートレート写真しか無くても縦型広告に使えます。
+
+| 制約 | 内容 |
+|---|---|
+| 参照画像 | JPG / JPEG / PNG / WebP、20MB未満、短辺300px超、アスペクト 2:5〜5:2 |
+| 対象 | 人物の顔のみ（`type: character`）。1カットにつき1人 |
+| 併用不可 | `keyframe` 指定時は無視され、`use_keyframe: false` では使えません |
+| 一貫性 | **完全な同一性は保証されません。** 同一人物は2カットまでを推奨（超えると警告） |
+
+> 動画生成APIに人物参照を直接渡せるのは `S2V-01` のみ（720P / 6秒固定、プロンプト追従が弱い）です。
+> 本ツールは既定でキーフレーム経由の方式を使います。
+
 ### `bgm`
 
 ```json
@@ -55,6 +87,7 @@
 | `caption` | | `""` | 焼き込む字幕。空なら字幕なし |
 | `keyframe` | | なし | 既存画像を使う場合のパス or URL（`image_prompt` より優先） |
 | `use_keyframe` | | `true` | `false` にすると画像を挟まず T2V。**縦型では非推奨** |
+| `cast` | | なし | トップレベル `cast` のキー。そのカットに登場させる人物 |
 
 ※ `keyframe` を指定する場合は `image_prompt` 不要。
 
@@ -82,3 +115,5 @@
 - 1 カットが 10 秒超
 - `image_prompt` も `keyframe` も無い
 - `motion_prompt` が空
+- `cast` の参照画像が存在しない / 未定義のキャスト名を参照している
+- 同一キャストが3カット以上に登場している
