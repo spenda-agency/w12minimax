@@ -12,6 +12,10 @@ from .config import DEFAULT_TTS_MODEL, EP_T2A
 
 # 日本語ナレーションで使いやすいプリセットボイス。
 # 実際に使えるIDはアカウント/リージョンで異なるため、コンソールで確認して増やす。
+# 多言語モデルのため、漢字のみの短いフレーズは中国語として読まれることがある。
+# 日本語であることを明示して防ぐ（実 API で "Japanese" が受理されることを確認済み）。
+DEFAULT_LANGUAGE_BOOST = "Japanese"
+
 JA_VOICES = {
     "female_calm": "Japanese_CalmLady",
     "female_bright": "Japanese_KindLady",
@@ -31,6 +35,7 @@ def synthesize(
     volume: float = 1.0,
     pitch: int = 0,
     emotion: str | None = None,
+    language_boost: str | None = DEFAULT_LANGUAGE_BOOST,
     audio_format: str = "mp3",
     sample_rate: int = 32000,
     bitrate: int = 128000,
@@ -57,6 +62,9 @@ def synthesize(
             "channel": 1,
         },
     }
+    if language_boost:
+        # 漢字だけの短いテキストは中国語と判定されることがある。明示して防ぐ。
+        body["language_boost"] = language_boost
 
     payload = client.request("POST", EP_T2A, body=body, with_group_id=True)
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -95,6 +103,7 @@ def synthesize_segments(
     speed: float = 1.0,
     volume: float = 1.0,
     emotion: str | None = None,
+    language_boost: str | None = DEFAULT_LANGUAGE_BOOST,
     work_dir: Path | None = None,
 ) -> Path:
     """フレーズごとに合成し、無音を挟んで連結する。
@@ -105,6 +114,10 @@ def synthesize_segments(
     **限界**: フレーズを別録りして繋ぐため、一息で読んだときの句間の
     イントネーションの連続性は失われる。切れ目を意図的に作りたい箇所にだけ使うこと。
     全体を自然に読ませたいなら `synthesize()` を使う。
+
+    **注意**: 漢字だけの短いセグメント（例「集客支援、」）は言語判定の手がかりが無く、
+    中国語として読まれることがある。`language_boost` で防いでいるが、
+    各セグメントに仮名を含めておくとより確実。
     """
     if not segments:
         raise MinimaxError("segments が空です")
@@ -120,6 +133,7 @@ def synthesize_segments(
                 voice_id=voice_id, model=model,
                 speed=seg.speed if seg.speed is not None else speed,
                 volume=volume, pitch=seg.pitch, emotion=emotion,
+                language_boost=language_boost,
             )
             if client.dry_run:
                 parts.append(raw)
