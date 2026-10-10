@@ -96,6 +96,56 @@ def normalize_clip(src: Path, dest: Path, preset: Preset, seconds: float, fps: i
     return dest
 
 
+def strip_silence(src: Path, dest: Path, tail: float = 0.06) -> Path:
+    """前後の無音を落とす。末尾は `tail` 秒だけ残す。
+
+    フレーズ単位で合成した音声を連結するとき、各パートに付く無音をそのままにすると
+    繋ぎ目が間延びする。連結前にこれを通す。
+    """
+    _require_ffmpeg()
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    run([
+        "ffmpeg", "-y", "-i", str(src),
+        "-af",
+        "silenceremove=start_periods=1:start_silence=0:start_threshold=-50dB:"
+        f"stop_periods=-1:stop_silence={tail}:stop_threshold=-50dB",
+        "-c:a", "libmp3lame", "-b:a", "128k", str(dest),
+    ])
+    return dest
+
+
+def concat_audio(parts: list[Path], dest: Path, gaps: list[float] | None = None) -> Path:
+    """音声を連結する。`gaps[i]` 秒の無音を parts[i] の後ろに挟む。
+
+    `gaps` は parts と同じ長さか None。最後の要素ぶんの無音も末尾に入る。
+    """
+    _require_ffmpeg()
+    if gaps is not None and len(gaps) != len(parts):
+        raise ValueError(f"gaps は parts と同数にしてください（parts={len(parts)}, gaps={len(gaps)}）")
+    dest.parent.mkdir(parents=True, exist_ok=True)
+
+    inputs: list[str] = []
+    labels: list[str] = []
+    idx = 0
+    for i, part in enumerate(parts):
+        inputs += ["-i", str(part)]
+        labels.append(f"[{idx}:a]")
+        idx += 1
+        gap = (gaps[i] if gaps else 0.0) or 0.0
+        if gap > 0:
+            inputs += ["-f", "lavfi", "-t", f"{gap:.3f}", "-i", "anullsrc=r=44100:cl=mono"]
+            labels.append(f"[{idx}:a]")
+            idx += 1
+
+    run([
+        "ffmpeg", "-y", *inputs,
+        "-filter_complex",
+        f"{''.join(labels)}concat=n={len(labels)}:v=0:a=1[out]",
+        "-map", "[out]", "-c:a", "libmp3lame", "-b:a", "128k", str(dest),
+    ])
+    return dest
+
+
 def trim(src: Path, dest: Path, seconds: float) -> Path:
     """解像度はそのままに、先頭から指定秒だけ切り出す。
 

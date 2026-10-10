@@ -19,7 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from minimax_ads import assemble, storyboard, video  # noqa: E402
+from minimax_ads import assemble, audio, storyboard, video  # noqa: E402
 from minimax_ads.api import MinimaxClient, MinimaxError  # noqa: E402
 from minimax_ads.config import Settings  # noqa: E402
 from minimax_ads.presets import get as get_preset  # noqa: E402
@@ -141,6 +141,62 @@ class TestCast(unittest.TestCase):
             video.submit(client, "x", model="S2V-01", duration=6, resolution="720P",
                          subject_reference="https://example.invalid/face.jpg")
         self.assertIn('"image": [', buf.getvalue())
+
+
+class TestSegmentedVoice(unittest.TestCase):
+    """フレーズ単位のピッチ・間の指定（t2a_v2 は文章全体にしか効かないため）。"""
+
+    SPEC = [
+        {"text": "集客支援、"},
+        {"text": "エェアイ", "pause_after": 0.12},
+        {"text": "と", "pitch": -4, "pause_after": 0.18},
+        {"text": "システム開発、一貫して支援します。"},
+    ]
+
+    def test_segments_from_json_defaults(self):
+        segs = audio.segments_from_json(self.SPEC)
+        self.assertEqual(4, len(segs))
+        self.assertEqual((0, None, 0.0), (segs[0].pitch, segs[0].speed, segs[0].pause_after))
+        self.assertEqual((-4, 0.18), (segs[2].pitch, segs[2].pause_after))
+        with self.assertRaises(MinimaxError):
+            audio.segments_from_json([{"pitch": 1}])
+
+    def test_each_segment_is_synthesized_with_its_own_pitch(self):
+        settings = Settings(api_key="", group_id="", region="global",
+                            base_url="https://api.minimax.io/v1", timeout=10,
+                            max_retries=0, out_dir=Path("out"))
+        client = MinimaxClient(settings, dry_run=True)
+        with tempfile.TemporaryDirectory() as td:
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                audio.synthesize_segments(
+                    client, audio.segments_from_json(self.SPEC), Path(td) / "v.mp3")
+            out = buf.getvalue()
+            # セグメント数ぶんのリクエストが出ていること
+            self.assertEqual(4, out.count("POST https://api.minimax.io/v1/t2a_v2"))
+            # 「と」だけ pitch が下がっていること
+            self.assertEqual(1, out.count('"pitch": -4'))
+            self.assertEqual(3, out.count('"pitch": 0'))
+
+    @unittest.skipUnless(HAS_FFMPEG, "ffmpeg 未インストール")
+    def test_concat_audio_inserts_gaps(self):
+        with tempfile.TemporaryDirectory() as td:
+            parts = []
+            for i, sec in enumerate((1, 2), 1):
+                p = Path(td) / f"p{i}.mp3"
+                make_audio(p, sec)
+                parts.append(p)
+            dest = assemble.concat_audio(parts, Path(td) / "joined.mp3", [0.5, 0.0])
+            # 1s + 0.5s の無音 + 2s = 3.5s
+            self.assertAlmostEqual(3.5, assemble.probe_duration(dest), delta=0.15)
+
+    @unittest.skipUnless(HAS_FFMPEG, "ffmpeg 未インストール")
+    def test_concat_audio_rejects_mismatched_gaps(self):
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "p.mp3"
+            make_audio(p, 1)
+            with self.assertRaises(ValueError):
+                assemble.concat_audio([p], Path(td) / "x.mp3", [0.1, 0.2])
 
 
 class TestDryRun(unittest.TestCase):

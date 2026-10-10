@@ -210,13 +210,31 @@ def cmd_fetch(args) -> int:
 
 def cmd_voice(args) -> int:
     client = make_client(args)
+    dest = Path(args.out) if args.out else client.s.out_dir / "audio" / f"{args.name}.mp3"
+    voice_id = audio.JA_VOICES.get(args.voice, args.voice)
+
+    if args.segments:
+        if args.text or args.file:
+            raise MinimaxError("--segments は --text / --file と同時に使えません")
+        data = json.loads(Path(args.segments).read_text(encoding="utf-8"))
+        segments = audio.segments_from_json(data)
+        for s in segments:
+            mark = f" pitch={s.pitch:+d}" if s.pitch else ""
+            mark += f" 間{s.pause_after}s" if s.pause_after else ""
+            print(f"  「{s.text}」{mark}")
+        path = audio.synthesize_segments(
+            client, segments, dest,
+            voice_id=voice_id, model=args.model, speed=args.speed, emotion=args.emotion,
+        )
+        print(path)
+        return 0
+
     text = Path(args.file).read_text(encoding="utf-8") if args.file else args.text
     if not text:
-        raise MinimaxError("--text または --file でナレーション原稿を指定してください")
-    dest = Path(args.out) if args.out else client.s.out_dir / "audio" / f"{args.name}.mp3"
+        raise MinimaxError("--text / --file / --segments のいずれかで原稿を指定してください")
     path = audio.synthesize(
         client, text, dest,
-        voice_id=audio.JA_VOICES.get(args.voice, args.voice),
+        voice_id=voice_id,
         model=args.model, speed=args.speed, emotion=args.emotion,
     )
     print(path)
@@ -391,6 +409,9 @@ def build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("voice", help="ナレーション音声を生成")
     sp.add_argument("--text")
     sp.add_argument("--file", help="原稿テキストファイル")
+    sp.add_argument("--segments",
+                    help="フレーズ単位で音程・速度・間を指定する JSON ファイル。"
+                         "[{\"text\":\"...\",\"pitch\":-4,\"pause_after\":0.2}, ...]")
     sp.add_argument("--voice", default="female_calm")
     sp.add_argument("--model", default=DEFAULT_TTS_MODEL)
     sp.add_argument("--speed", type=float, default=1.0)
